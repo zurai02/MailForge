@@ -195,7 +195,6 @@ function renderDomainDetail(d) {
       if (result.verified) {
         toast('Domain verified');
         openDomain(d.id).then(() => loadDomains());
-        // refresh from server since state.domains is stale
         const fresh = await api.get('/api/domains');
         state.domains = fresh;
         renderDomainDetail(fresh.find(x => x.id === d.id));
@@ -301,4 +300,4 @@ async function loadLog() {
       <td style="color:${r.status === 'forwarded' ? 'var(--teal)' : 'var(--red)'}">${r.status}</td>
     </tr>
   `).join('');
-                                                      }
+          }
