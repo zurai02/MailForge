@@ -11,13 +11,11 @@ const api = {
   },
   get: (url) => api.call('GET', url),
   post: (url, body) => api.call('POST', url, body),
-  patch: (url, body) => api.call('PATCH', url, body),
   del: (url) => api.call('DELETE', url),
 };
 
-let state = { domains: [], currentDomain: null };
+let state = { domains: [] };
 
-// ---------- Boot ----------
 (async function init() {
   try {
     const session = await api.get('/api/session');
@@ -38,7 +36,6 @@ function showApp() {
   loadDomains();
 }
 
-// ---------- Login ----------
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('loginEmail').value;
@@ -58,26 +55,20 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   showLogin();
 });
 
-// ---------- Nav ----------
-document.querySelectorAll('.nav-item[data-view]').forEach(el => {
+document.querySelectorAll('.nav-item[data-view]').forEach((el) => {
   el.addEventListener('click', () => switchView(el.dataset.view));
 });
 
 function switchView(name) {
-  document.querySelectorAll('.nav-item[data-view]').forEach(el =>
+  document.querySelectorAll('.nav-item[data-view]').forEach((el) =>
     el.classList.toggle('active', el.dataset.view === name));
-  document.querySelectorAll('main > .view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('main > .view').forEach((el) => el.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
   if (name === 'domains') loadDomains();
-  if (name === 'log') loadLog();
 }
 
-document.getElementById('backToDomains').addEventListener('click', (e) => {
-  e.preventDefault();
-  switchView('domains');
-});
+document.getElementById('backToDomains').addEventListener('click', () => switchView('domains'));
 
-// ---------- Toast ----------
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -85,7 +76,6 @@ function toast(msg) {
   setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-// ---------- Domains list ----------
 async function loadDomains() {
   const domains = await api.get('/api/domains');
   state.domains = domains;
@@ -96,7 +86,7 @@ async function loadDomains() {
     return;
   }
 
-  container.innerHTML = domains.map(d => `
+  container.innerHTML = domains.map((d) => `
     <div class="card domain-row">
       <span class="name"><a href="#" data-id="${d.id}" class="open-domain">${d.name}</a></span>
       <span class="status-pill ${d.verified ? 'verified' : 'pending'}">
@@ -105,7 +95,7 @@ async function loadDomains() {
     </div>
   `).join('');
 
-  container.querySelectorAll('.open-domain').forEach(a => {
+  container.querySelectorAll('.open-domain').forEach((a) => {
     a.addEventListener('click', (e) => {
       e.preventDefault();
       openDomain(Number(a.dataset.id));
@@ -127,13 +117,13 @@ document.getElementById('addDomainForm').addEventListener('submit', async (e) =>
   }
 });
 
-// ---------- Domain detail ----------
 async function openDomain(id) {
-  const domain = state.domains.find(d => d.id === id) || await api.get(`/api/domains/${id}`);
-  state.currentDomain = domain;
+  const domains = await api.get('/api/domains');
+  state.domains = domains;
+  const domain = domains.find((d) => d.id === id);
+  if (!domain) return;
   switchView('domain-detail');
   renderDomainDetail(domain);
-  if (domain.verified) loadForwards(domain.id);
 }
 
 function renderDomainDetail(d) {
@@ -141,18 +131,22 @@ function renderDomainDetail(d) {
   document.getElementById('detailDomainStatus').textContent = d.verified
     ? `Verified on ${new Date(d.verified_at).toLocaleDateString()}`
     : 'Not verified yet - add the TXT record below.';
-  document.getElementById('forwardDomainSuffix').textContent = d.name;
 
   const verifyBlock = document.getElementById('verifyBlock');
-  const forwardsBlock = document.getElementById('forwardsBlock');
+  const verifiedBlock = document.getElementById('verifiedBlock');
 
   if (d.verified) {
     verifyBlock.innerHTML = '';
-    forwardsBlock.style.display = 'block';
+    verifiedBlock.style.display = 'block';
+    document.getElementById('deleteVerifiedDomainBtn').onclick = async () => {
+      if (!confirm(`Remove ${d.name}?`)) return;
+      await api.del(`/api/domains/${d.id}`);
+      switchView('domains');
+    };
     return;
   }
 
-  forwardsBlock.style.display = 'none';
+  verifiedBlock.style.display = 'none';
   verifyBlock.innerHTML = `
     <div class="section-title">Verify ownership</div>
     <div class="card">
@@ -161,12 +155,8 @@ function renderDomainDetail(d) {
         DNS changes usually take a few minutes, sometimes longer.
       </p>
       <div class="dns-block">
-        <div class="dns-row">
-          <span class="dns-label">Type</span><span class="dns-value">TXT</span>
-        </div>
-        <div class="dns-row">
-          <span class="dns-label">Host</span><span class="dns-value">@ (root)</span>
-        </div>
+        <div class="dns-row"><span class="dns-label">Type</span><span class="dns-value">TXT</span></div>
+        <div class="dns-row"><span class="dns-label">Host</span><span class="dns-value">@ (root)</span></div>
         <div class="dns-row">
           <span class="dns-label">Value</span>
           <span class="dns-value">${d.txt_record_value}</span>
@@ -194,12 +184,8 @@ function renderDomainDetail(d) {
       const result = await api.post(`/api/domains/${d.id}/verify`);
       if (result.verified) {
         toast('Domain verified');
-        openDomain(d.id).then(() => loadDomains());
-        const fresh = await api.get('/api/domains');
-        state.domains = fresh;
-        renderDomainDetail(fresh.find(x => x.id === d.id));
-        loadForwards(d.id);
-        document.getElementById('forwardsBlock').style.display = 'block';
+        await openDomain(d.id);
+        loadDomains();
       } else {
         document.getElementById('verifyMsg').textContent = result.message;
       }
@@ -212,92 +198,8 @@ function renderDomainDetail(d) {
   });
 
   document.getElementById('deleteDomainBtn').addEventListener('click', async () => {
-    if (!confirm(`Remove ${d.name} and all its forwarding rules?`)) return;
+    if (!confirm(`Remove ${d.name}?`)) return;
     await api.del(`/api/domains/${d.id}`);
     switchView('domains');
   });
 }
-
-// ---------- Forwarding rules ----------
-async function loadForwards(domainId) {
-  const rows = await api.get(`/api/domains/${domainId}/forwards`);
-  const tbody = document.getElementById('forwardsTbody');
-  const empty = document.getElementById('forwardsEmpty');
-
-  if (!rows.length) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-
-  tbody.innerHTML = rows.map(r => `
-    <tr>
-      <td>${r.alias}</td>
-      <td>${r.destination}</td>
-      <td>
-        <label style="display:flex; align-items:center; gap:6px; font-family:var(--sans); font-size:13px; color:var(--muted);">
-          <input type="checkbox" ${r.enabled ? 'checked' : ''} data-id="${r.id}" class="toggle-forward">
-          ${r.enabled ? 'Active' : 'Paused'}
-        </label>
-      </td>
-      <td><button class="btn danger" data-id="${r.id}" style="padding:4px 10px; font-size:12px;">Remove</button></td>
-    </tr>
-  `).join('');
-
-  tbody.querySelectorAll('.toggle-forward').forEach(cb => {
-    cb.addEventListener('change', async () => {
-      await api.patch(`/api/forwards/${cb.dataset.id}`, { enabled: cb.checked });
-      loadForwards(domainId);
-    });
-  });
-
-  tbody.querySelectorAll('button[data-id]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      await api.del(`/api/forwards/${btn.dataset.id}`);
-      loadForwards(domainId);
-    });
-  });
-}
-
-document.getElementById('addForwardForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const alias = document.getElementById('newAlias');
-  const destination = document.getElementById('newDestination');
-  const errorEl = document.getElementById('addForwardError');
-  errorEl.textContent = '';
-  try {
-    await api.post(`/api/domains/${state.currentDomain.id}/forwards`, {
-      alias: alias.value.trim(),
-      destination: destination.value.trim(),
-    });
-    alias.value = '';
-    destination.value = '';
-    loadForwards(state.currentDomain.id);
-  } catch (err) {
-    errorEl.textContent = err.message;
-  }
-});
-
-// ---------- Mail log ----------
-async function loadLog() {
-  const rows = await api.get('/api/log');
-  const tbody = document.getElementById('logTbody');
-  const empty = document.getElementById('logEmpty');
-
-  if (!rows.length) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-
-  tbody.innerHTML = rows.map(r => `
-    <tr>
-      <td>${new Date(r.created_at).toLocaleString()}</td>
-      <td>${r.to_addr || '-'}</td>
-      <td>${r.to_addr && r.status === 'forwarded' ? r.to_addr : '-'}</td>
-      <td style="color:${r.status === 'forwarded' ? 'var(--teal)' : 'var(--red)'}">${r.status}</td>
-    </tr>
-  `).join('');
-          }
