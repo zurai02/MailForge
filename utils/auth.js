@@ -1,7 +1,5 @@
 const bcrypt = require('bcryptjs');
 
-// Password is hashed once at boot from the plaintext .env value so the
-// plaintext never sits in memory longer than necessary and never touches disk.
 let passwordHash = null;
 
 function initAdmin() {
