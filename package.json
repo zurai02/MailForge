@@ -1,28 +1,12 @@
 {
   "name": "mailforge",
-  "version": "1.0.0",
-  "description": "Self-hosted email server - receive real emails",
+  "version": "3.0.0",
+  "description": "Self-hosted domain manager with TXT-record ownership verification. Zero external dependencies.",
   "main": "server.js",
+  "type": "commonjs",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node server.js"
   },
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^9.4.3",
-    "dotenv": "^16.4.5",
-    "express": "^4.18.3",
-    "express-session": "^1.18.0",
-    "smtp-server": "^3.13.6",
-    "mailparser": "^3.7.2"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.0"
-  },
-  "keywords": [
-    "email",
-    "smtp",
-    "self-hosted"
-  ],
-  "license": "MIT"
+  "dependencies": {},
+  "engines": { "node": ">=16" }
 }
