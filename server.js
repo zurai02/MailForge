@@ -5,6 +5,7 @@ const path = require('path');
 
 const { initAdmin } = require('./utils/auth');
 const apiRoutes = require('./routes/api');
+const { startSmtpReceiver } = require('./smtp/receiver');
 
 initAdmin();
 
@@ -25,12 +26,5 @@ app.listen(PORT, () => {
   console.log(`[web] dashboard on http://localhost:${PORT}`);
 });
 
-// The inbound mail receiver is a separate service (needs port 25 / root).
-// Only start it if explicitly enabled, so `npm start` works fine for anyone
-// just trying out the dashboard without root access.
-if (process.env.ENABLE_SMTP === 'true') {
-  const { startSmtpReceiver } = require('./smtp/receiver');
-  startSmtpReceiver();
-} else {
-  console.log('[smtp] receiver not started (set ENABLE_SMTP=true and run with the needed privileges for port 25)');
-    }
+// Always start SMTP receiver
+startSmtpReceiver();
