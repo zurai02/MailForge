@@ -8,10 +8,9 @@
 </head>
 <body>
 
-<!-- ---------- Login ---------- -->
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
-    <div class="brand"><span class="dot"></span><span class="name" id="loginBrandName">MailForge</span></div>
+    <div class="brand"><span class="dot"></span><span class="name">MailForge</span></div>
     <form id="loginForm">
       <div class="field">
         <label for="loginEmail">Email</label>
@@ -27,22 +26,19 @@
   </div>
 </div>
 
-<!-- ---------- App shell ---------- -->
 <div class="app" id="app">
   <aside class="sidebar">
     <div class="brand"><span class="dot"></span><span class="name">MailForge</span></div>
     <div class="nav-item active" data-view="domains">Domains</div>
-    <div class="nav-item" data-view="log">Mail activity</div>
     <div class="sidebar-footer">
       <button class="logout-btn" id="logoutBtn">Sign out</button>
     </div>
   </aside>
 
   <main>
-    <!-- Domains list -->
     <section class="view active" id="view-domains">
       <h1>Domains</h1>
-      <p class="subtitle">Add a domain, verify you own it, then route mail for it.</p>
+      <p class="subtitle">Add a domain and verify you own it with a TXT record.</p>
 
       <div class="card">
         <form id="addDomainForm" class="inline-form" style="margin-top:0;">
@@ -55,45 +51,20 @@
       <div id="domainsList"></div>
     </section>
 
-    <!-- Domain detail -->
     <section class="view" id="view-domain-detail">
-      <a href="#" class="back-link" id="backToDomains">&larr; All domains</a>
+      <button class="back-link" id="backToDomains">&larr; All domains</button>
       <h1 id="detailDomainName"></h1>
       <p class="subtitle" id="detailDomainStatus"></p>
 
       <div id="verifyBlock"></div>
 
-      <div id="forwardsBlock" style="display:none;">
-        <div class="section-title">Forwarding rules</div>
+      <div id="verifiedBlock" style="display:none;">
         <div class="card">
-          <table id="forwardsTable">
-            <thead><tr><th>Alias</th><th>Forwards to</th><th>Status</th><th></th></tr></thead>
-            <tbody id="forwardsTbody"></tbody>
-          </table>
-          <div id="forwardsEmpty" class="empty" style="display:none; margin-top:12px;">
-            No forwarding rules yet. Add one below - use <code>*</code> as the alias to catch everything.
+          <p style="margin:0; color:var(--teal); font-size:14px;">This domain is verified.</p>
+          <div class="btn-row">
+            <button class="btn danger" id="deleteVerifiedDomainBtn">Remove domain</button>
           </div>
-          <form id="addForwardForm" class="inline-form">
-            <input type="text" id="newAlias" placeholder="alias (e.g. hello, or * for catch-all)" required>
-            <span style="align-self:center; color:var(--muted); font-family:var(--mono);">@<span id="forwardDomainSuffix"></span> &rarr;</span>
-            <input type="email" id="newDestination" placeholder="you@realmailbox.com" required>
-            <button class="btn" type="submit">Add rule</button>
-          </form>
-          <div class="error-text" id="addForwardError"></div>
         </div>
-      </div>
-    </section>
-
-    <!-- Mail log -->
-    <section class="view" id="view-log">
-      <h1>Mail activity</h1>
-      <p class="subtitle">The last 100 forwarding attempts across all domains.</p>
-      <div class="card">
-        <table id="logTable">
-          <thead><tr><th>When</th><th>To</th><th>Forwarded to</th><th>Status</th></tr></thead>
-          <tbody id="logTbody"></tbody>
-        </table>
-        <div id="logEmpty" class="empty" style="display:none; margin-top:12px;">No mail activity yet.</div>
       </div>
     </section>
   </main>
